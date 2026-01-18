@@ -92,12 +92,27 @@ def on_message(topic, msg):
     elif t == TOPIC_QUERY:
         needs_to_send_status = True
         
-time.sleep(3)
-connect_wifi()
-print("Checking for updates...")
+time.sleep(3) # เผื่อเวลาให้ระบบเข้าที่
+if connect_wifi():
+    print("Checking for updates...")
+    try:
+        if OTA.fetch():
+            print("!!! ===> A newer version is available!")
+            if OTA.update():
+                print("Update completed! Rebooting...")
+                machine.reset()
+    except Exception as e:
+        print("OTA Error:", e)
+    
+    # ... ส่วนของ MQTT Client ต่อจากตรงนี้ ...
+else:
+    print("No WiFi available. System will retry in 30s.")
+    time.sleep(30)
+    machine.reset()
 
 # ตรวจสอบและติดตั้งอัปเดตผ่าน OTA
 try:
+  print("Checking for updates...")
   if OTA.fetch():
     print("!!! ===> A newer version is available!")
     if OTA.update():
