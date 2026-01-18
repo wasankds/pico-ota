@@ -19,7 +19,7 @@ needs_to_send_status: bool = False
 # --- 1. ข้อมูลประจำตัวอุปกรณ์ ---
 MQTT_BROKER = '192.168.1.100' 
 DEVICE_ID = "pico-001"
-CLIENT_ID = 'pico_001'
+CLIENT_ID = 'pico-001'
 SSID = 'WK_AIS_2.4G'
 PASSWORD = '0813996766'
 
