@@ -2,9 +2,10 @@
 
 # --- WiFi & OTA ---
 WIFI_CONFIGS = [
-  ('Galaxy A7189EE', '12345678'),
-  ('WK_AIS_2.4G', '0813996766')
+  ('WK_AIS_2.4G', '0813996766'),
+  ('Galaxy A7189EE', '12345678')
 ]
+ENABLE_OTA = False  # ตั้งเป็น False ถ้าต้องการข้ามการเช็คอัปเดต (By Pass)
 OTA_USER = "wasankds"
 OTA_REPO = "pico-ota"
 OTA_DIR  = "pico-builtin-led"

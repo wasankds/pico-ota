@@ -8,23 +8,22 @@ import config
 
 # --- เตรียมระบบ OTA ---
 OTA = senko.Senko(
-    user=config.OTA_USER, repo=config.OTA_REPO,
-    working_dir=config.OTA_DIR, files=config.OTA_FILES
+  user=config.OTA_USER, repo=config.OTA_REPO,
+  working_dir=config.OTA_DIR, files=config.OTA_FILES
 )
-
 led = Pin("LED", Pin.OUT)
 needs_to_send_status = False
 
 # --- ฟังก์ชันส่งสถานะ (ดึง Topic จาก config) ---
 def send_status(client):
-    global needs_to_send_status
-    try:
-        current_val = "ON" if led.value() == 1 else "OFF"
-        client.publish(config.TOPIC_S1_STATUS, current_val, retain=False, qos=1)
-        print(f"Reported status: {current_val}")
-        needs_to_send_status = False 
-    except Exception as e:
-        print("Publish failed:", e)
+  global needs_to_send_status
+  try:
+    current_val = "ON" if led.value() == 1 else "OFF"
+    client.publish(config.TOPIC_S1_STATUS, current_val, retain=False, qos=1)
+    print(f"Reported status: {current_val}")
+    needs_to_send_status = False 
+  except Exception as e:
+    print("Publish failed:", e)
 
 # --- ฟังก์ชันเมื่อมีข้อความเข้า ---
 def on_message(topic, msg):
@@ -34,23 +33,27 @@ def on_message(topic, msg):
     print(f"Message received: {t} -> {m}")
     
     if t == config.TOPIC_S1_ACTION:
-        if m == "ON": led.value(1)
-        elif m == "OFF": led.value(0)
-        needs_to_send_status = True
+      if m == "ON": led.value(1)
+      elif m == "OFF": led.value(0)
+      needs_to_send_status = True  # ยกธงบอกว่า "ไฟเปลี่ยนสถานะแล้ว ต้องรายงาน"
+
     elif t == config.TOPIC_QUERY:
-        needs_to_send_status = True
+      needs_to_send_status = True  # ยกธงบอกว่า "มีคนถามสถานะเข้ามา ต้องตอบกลับ"
 
 # --- เริ่มการทำงาน ---
 time.sleep(3)
 
 if wifi_manager.connect_wifi(config.WIFI_CONFIGS):
     # 1. OTA Update
-    try:
-        if OTA.fetch():
-            if OTA.update():
-                print("Update completed! Rebooting...")
-                machine.reset()
-    except: pass
+    if config.ENABLE_OTA:
+      try:
+          if OTA.fetch():
+              if OTA.update():
+                  print("Update completed! Rebooting...")
+                  machine.reset()
+      except: pass
+    else:
+      print("OTA is disabled (Bypassed)")
 
     # 2. MQTT Setup
     client = MQTTClient(config.CLIENT_ID, config.MQTT_BROKER)
@@ -71,6 +74,7 @@ if wifi_manager.connect_wifi(config.WIFI_CONFIGS):
         
         while True:
             client.check_msg() 
+
             if needs_to_send_status:
                 send_status(client)
             time.sleep(0.1)
