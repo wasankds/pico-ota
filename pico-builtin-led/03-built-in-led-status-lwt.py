@@ -4,15 +4,6 @@ import machine  # เพิ่มการ import machine เพื่อใช�
 from machine import Pin
 from umqtt.simple import MQTTClient
 
-# OTA with Senko
-import senko
-OTA = senko.Senko(       # ข้อมูล GitHub สำหรับ OTA
-  user="wasankds",       # ชื่อ User GitHub ของคุณ
-  repo="pico-ota",       # ชื่อโปรเจกต์
-  working_dir="pico-builtin-led", # โฟลเดอร์ใน GitHub ที่เก็บโค้ด (ถ้ามี)
-  files=["main.py"]                # ไฟล์ที่ต้องการให้อัปเดต
-)
-
 # --- 0. ตัวแปรสถานะ (Flag) ---
 needs_to_send_status: bool = False
 
@@ -67,28 +58,15 @@ def on_message(topic, msg):
         
     elif t == TOPIC_QUERY:
         needs_to_send_status = True
-        
-time.sleep(3)
-connect_wifi()
-print("Checking for updates...")
 
-# ตรวจสอบและติดตั้งอัปเดตผ่าน OTA
-try:
-  if OTA.fetch():
-    print("!!! ===> A newer version is available!")
-    if OTA.update():
-      print("Update completed! Rebooting...")
-      machine.reset()
-except Exception as e:
-  print("OTA Error:", e)
-    
+connect_wifi()
 client = MQTTClient(CLIENT_ID, MQTT_BROKER)
 client.set_callback(on_message)
 client.set_last_will(TOPIC_AVAIL, "OFFLINE", retain=True, qos=1)
 
 try:
     client.connect()
-    print("MQTT Connected! V2 ====================")
+    print("MQTT Connected!")
     client.publish(TOPIC_AVAIL, "ONLINE", retain=True, qos=1)
     # บอก Broker ว่า หัวข้อเหล่านี้ขอรับแบบ QoS 1 นะ (ถ้าฉันได้รับแล้ว เดี๋ยวฉันจะส่ง PUBACK กลับไปบอก Broker เอง)
     client.subscribe(TOPIC_S1_ACTION, qos=1)
