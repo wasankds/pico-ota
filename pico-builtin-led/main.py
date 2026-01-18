@@ -31,16 +31,40 @@ TOPIC_AVAIL     = DEVICE_ID + "/system/availability"
 
 led = Pin("LED", Pin.OUT)
 
+# def connect_wifi():
+#     wlan = network.WLAN(network.STA_IF)
+#     wlan.active(True)
+#     wlan.connect(SSID, PASSWORD)
+#     print('Connecting to WiFi...', end='')
+#     while not wlan.isconnected():
+#         print('.', end='')
+#         time.sleep(1)
+#     print('\nWiFi Connected! IP:', wlan.ifconfig()[0])
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
-    wlan.connect(SSID, PASSWORD)
-    print('Connecting to WiFi...', end='')
-    while not wlan.isconnected():
-        print('.', end='')
-        time.sleep(1)
-    print('\nWiFi Connected! IP:', wlan.ifconfig()[0])
+    
+    # รายชื่อ WiFi ที่อนุญาต (ตัวหลัก และ ตัวสำรอง เช่น Hotspot มือถือคุณ)
+    configs = [
+      ('Galaxy A7189EE', '12345678') 
+      ('WK_AIS_2.4G', '0813996766'),
+    ]
+    
+    for ssid, pwd in configs:
+        print(f'Connecting to {ssid}...')
+        wlan.connect(ssid, pwd)
 
+        # รอเชื่อมต่อ 10 วินาทีต่อหนึ่งจุด
+        for _ in range(10):
+            if wlan.isconnected():
+                print('\nConnected! IP:', wlan.ifconfig()[0])
+                return True
+            time.sleep(1)
+            print('.', end='')
+        print('\nFailed to connect to', ssid)
+        
+    return False
+  
 def send_status():
     global needs_to_send_status
     try:
