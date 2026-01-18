@@ -87,7 +87,7 @@ client.set_last_will(TOPIC_AVAIL, "OFFLINE", retain=True, qos=1)
 
 try:
     client.connect()
-    print("MQTT Connected!")
+    print("MQTT Connected! V2 ====================")
     client.publish(TOPIC_AVAIL, "ONLINE", retain=True, qos=1)
     # บอก Broker ว่า หัวข้อเหล่านี้ขอรับแบบ QoS 1 นะ (ถ้าฉันได้รับแล้ว เดี๋ยวฉันจะส่ง PUBACK กลับไปบอก Broker เอง)
     client.subscribe(TOPIC_S1_ACTION, qos=1)
