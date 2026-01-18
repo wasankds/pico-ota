@@ -3,12 +3,13 @@ import time
 import machine  # เพิ่มการ import machine เพื่อใช้ reset()
 from machine import Pin
 from umqtt.simple import MQTTClient
+
 # OTA with Senko
 import senko
 OTA = senko.Senko(               # ข้อมูล GitHub สำหรับ OTA
-  user="your-github-username", # ชื่อ User GitHub ของคุณ
-  repo="your-repo-name",       # ชื่อโปรเจกต์
-  working_dir="app",           # โฟลเดอร์ใน GitHub ที่เก็บโค้ด (ถ้ามี)
+  user="wasankds", # ชื่อ User GitHub ของคุณ
+  repo="pico-ota",       # ชื่อโปรเจกต์
+  working_dir="pico-001",           # โฟลเดอร์ใน GitHub ที่เก็บโค้ด (ถ้ามี)
   files=["main.py"]            # ไฟล์ที่ต้องการให้อัปเดต
 )
 
@@ -66,9 +67,11 @@ def on_message(topic, msg):
         
     elif t == TOPIC_QUERY:
         needs_to_send_status = True
-
+        
+time.sleep(3)
 connect_wifi()
 print("Checking for updates...")
+
 try:
   if OTA.fetch():
     print("A newer version is available!")
