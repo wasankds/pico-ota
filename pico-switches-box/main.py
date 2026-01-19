@@ -176,9 +176,10 @@ def send_dht_data(mqtt_client):
 
 # --- 4. Startup Sequence (แบบละเอียด เช็คสถานะได้) ---
 tft.fill_rect(0, 0, 320, 240, C_BLACK)
-# แถวที่ 1: ชื่อระบบและเวอร์ชัน
-# tft.draw_text(20, 30, "{} (v{})".format(sysname, version), C_YELLOW, 2)
-tft.draw_text(20, 30, sysname + " v" + version, C_YELLOW, 2)
+# แถวที่ 1: ชื่อระบบ (Size 2) และ เวอร์ชั่น (Size 1 เพื่อลดขนาดและกันทับ)
+tft.draw_text(20, 30, sysname, C_YELLOW, 1)
+# ขยับไปทางขวา (X=210) และใช้ขนาดเล็ก (Size 1) เพื่อเว้นช่องไฟให้สวยงาม
+tft.draw_text(210, 30, "v" + version, C_WHITE, 1)
 
 # แถวที่ 2: สถานะเริ่มเชื่อมต่อ Wi-Fi
 tft.draw_text(20, 70, "CONNECTING WIFI...", C_WHITE, 2)
