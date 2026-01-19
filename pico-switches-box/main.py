@@ -231,58 +231,50 @@ while True:
         
     # 6.3 Touch Control
     pos = tft.get_touch()
+    
     if pos:
-      tx, ty = pos
-      
-      # ก. จัดการการกดปุ่มปกติ
-      if utime.ticks_diff(now, last_press) > 300:
-        for btn in [btn1, btn2]:
-          if btn["x"] <= tx <= btn["x"]+btn["w"] and btn["y"] <= ty <= btn["y"]+btn["h"]:
-            btn["state"] = not btn["state"]
-            btn["relay"].value(0 if btn["state"] else 1)
-            draw_btn(btn)
+        tx, ty = pos
+        
+        # --- เช็คก่อนว่าเป็นการกดปุ่ม S1/S2 หรือไม่ ---
+        # จะทำงานเฉพาะตอน "เริ่มแตะ" ครั้งแรก (ใช้ last_press กันการกดแช่)
+        if utime.ticks_diff(now, last_press) > 300:
+            button_hit = False
+            for btn in [btn1, btn2]:
+                if btn["x"] <= tx <= btn["x"]+btn["w"] and btn["y"] <= ty <= btn["y"]+btn["h"]:
+                    btn["state"] = not btn["state"]
+                    btn["relay"].value(0 if btn["state"] else 1)
+                    draw_btn(btn)
+                    needs_to_send_status = True
+                    last_press = now
+                    button_hit = True
             
-            # ส่งสถานะเมื่อมีการกดปุ่ม
-            if mqtt_connected:
-              try:
-                client.publish(btn["topic"], "ON" if btn["state"] else "OFF", retain=True, qos=1)
-              except:
-                mqtt_connected = False
-                    
-            # แทนที่จะ publish ตรงนี้ ให้ตั้ง Flag แทน
-            needs_to_send_status = True
-            last_press = now
+            # ถ้าไม่ได้กดโดนปุ่ม ให้เริ่มนับเวลา OTA
+            if not button_hit:
+                if not ota_is_pressing:
+                    ota_touch_start_time = now
+                    ota_is_pressing = True
+
+        # --- ส่วนจัดการ OTA (จะทำงานต่อเมื่อ ota_is_pressing เป็น True) ---
+        if ota_is_pressing:
+            duration = utime.ticks_diff(now, ota_touch_start_time)
             
-      # ข. จัดการ OTA (ค้าง 10 วินาที)
-      if not ota_is_pressing:
-          ota_touch_start_time = now
-          ota_is_pressing = True
-          ota_text_drawn = False # รีเซ็ตเมื่อเริ่มแตะใหม่
-      else:
-        duration = utime.ticks_diff(now, ota_touch_start_time)
-        if duration > 10000:
-          ota_is_pressing = False
-          # วาดข้อความแจ้งเริ่ม OTA เพียงครั้งเดียว
-          if not ota_text_drawn:
-              tft.fill_rect(0, 0, 320, 240, C_BLACK)
-              tft.draw_text(60, 110, "STARTING OTA...", C_WHITE, 2)
-              ota_text_drawn = True
-          
-          run_ota() # เข้าสู่ฟังก์ชัน Senko
-          
-        elif duration > 1000:
-          sec = 10 - (duration // 1000)
-          # เพิ่มเช็คกันวาดซ้ำ: ให้วาดเฉพาะตอนที่ "วินาทีเปลี่ยน" เท่านั้น
-          if 'last_sec' not in locals() or last_sec != sec:
-              tft.fill_rect(80, 210, 220, 30, C_BLACK) # ลบเฉพาะจุด
-              tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
-              last_sec = sec
+            if duration > 10000:
+                ota_is_pressing = False 
+                tft.fill_rect(0, 0, 320, 240, C_BLACK)
+                tft.draw_text(60, 110, "STARTING OTA...", C_WHITE, 2)
+                run_ota() 
+                
+            elif duration > 1000:
+                sec = 10 - (duration // 1000)
+                if 'last_sec' not in locals() or last_sec != sec:
+                    tft.fill_rect(80, 210, 220, 30, C_BLACK)
+                    tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
+                    last_sec = sec
     else:
-      # ถ้านิ้วปล่อย ให้เคลียร์ Countdown
-      if ota_is_pressing:
-          tft.fill_rect(80, 210, 220, 30, C_BLACK)
-          ota_is_pressing = False
-          ota_text_drawn = False
+        # ถ้านิ้วปล่อย ให้เคลียร์สถานะทั้งหมด
+        if ota_is_pressing:
+            tft.fill_rect(80, 210, 220, 30, C_BLACK)
+            ota_is_pressing = False
 
     # 6.4 อัปเดตข้อมูลบนจอ (ทุก 1 วินาที)
     if utime.ticks_diff(now, last_tick) > 1000:
