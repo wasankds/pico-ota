@@ -138,8 +138,9 @@ def send_dht_data(mqtt_client):
 
 
 def run_ota():
+    # ล้างจอทั้งหมดก่อนเริ่มกระบวนการเพื่อความสะอาด
     tft.fill_rect(0, 0, 320, 240, C_BLACK)
-    tft.draw_text(60, 100, "CHECKING UPDATE...", C_WHITE, 2)
+    tft.draw_text(60, 110, "CHECKING UPDATE...", C_WHITE, 2)
     
     try:
         OTA = senko.Senko(
@@ -151,10 +152,12 @@ def run_ota():
         
         if OTA.update():
           tft.fill_rect(0, 0, 320, 240, COLOR_BTN_ON) # จอเขียวแจ้งว่าสำเร็จ
+          # tft.fill_rect(0, 100, 320, 40, C_BLACK) # ล้างแถบกลางจอ
           tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
           utime.sleep(2)
           machine.reset() # Restart เครื่องทันที
         else:
+          tft.fill_rect(0, 100, 320, 40, C_BLACK) # ล้างแถบกลางจอ
           tft.draw_text(60, 140, "ALREADY UP TO DATE", C_YELLOW, 2)
           utime.sleep(2)
           
