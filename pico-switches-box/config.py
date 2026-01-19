@@ -10,7 +10,8 @@ WIFI_CONFIGS = [
 OTA_USER = "wasankds"
 OTA_REPO = "pico-ota"
 OTA_DIR  = "pico-switches-box"
-OTA_FILES = ["main.py",  "wifi_manager.py", "tft_control.py", "config.py"]
+# OTA_FILES = ["main.py",  "wifi_manager.py", "tft_control.py", "config.py"]
+OTA_FILES = ["main.py",  "wifi_manager.py", "tft_control.py"]
 
 # --- MQTT Settings ---
 MQTT_BROKER = '192.168.1.100'
