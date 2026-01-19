@@ -9,7 +9,7 @@ import gc # เพิ่มไว้ที่หัวไฟล์
 from umqtt.simple import MQTTClient
 from tft_control import TFTDisplay, C_BLACK, C_WHITE, C_YELLOW, COLOR_BTN_ON, COLOR_BTN_OFF, COLOR_TEMP, COLOR_HUMID
 sysname : str = "Eagle Eye Legion"
-version : str = "1.0.3"
+version : str = "1.0.4"
 
 # --- 1. Hardware Setup ---
 relay1 = Pin(14, Pin.OUT, value=1)
@@ -84,19 +84,32 @@ def trigger_ota():
                          working_dir=config.OTA_DIR, files=config.OTA_FILES)
         
         if OTA.update():
+            # 1. เคลียร์จอเป็นสีเขียว
             tft.fill_rect(0, 0, 320, 240, COLOR_BTN_ON)
-            tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
+            utime.sleep_ms(300) # ให้เวลา Controller นิ่งหลังถมสีเขียวเต็มจอ
+            
+            # 2. Dummy Write ล้างหัวเข็ม SPI
+            tft.fill_rect(0, 0, 1, 1, COLOR_BTN_ON) 
+            
+            # 3. แยกวาดข้อความเป็น 2 ส่วน (ลด Buffer)
+            tft.draw_text(40, 100, "UPDATE SUCCESS!", C_WHITE, 2)
+            utime.sleep_ms(100) # เว้นจังหวะนิดนึง
+            tft.draw_text(40, 140, "REBOOTING...", C_WHITE, 2)
+            
             utime.sleep(2)
             machine.reset()
         else:
-            tft.draw_text(60, 160, "ALREADY UP TO DATE", C_WHITE, 1)
+            # กรณีไม่มีตัวอัปเดตใหม่
+            tft.fill_rect(0, 150, 320, 40, C_BLACK)
+            tft.draw_text(60, 160, "VERSION IS UP TO DATE", C_YELLOW, 1)
             utime.sleep(2)
             machine.reset()
     except Exception as e:
-        # ถ้า Error -2 อีก ให้ลองเช็คว่า URL ใน config ถูกต้องไหม
-        print("OTA Error:", e)
-        tft.fill_rect(0, 150, 320, 50, C_BLACK)
-        tft.draw_text(20, 160, "ERROR: {}".format(e), COLOR_BTN_OFF, 1)
+      # กรณี Error
+        tft.fill_rect(0, 0, 320, 240, COLOR_BTN_OFF) # จอแดง
+        utime.sleep_ms(200)
+        tft.draw_text(20, 110, "OTA FAILED!", C_WHITE, 2)
+        tft.draw_text(20, 150, "ERROR: " + str(e), C_WHITE, 1)
         utime.sleep(3)
         machine.reset()
         
