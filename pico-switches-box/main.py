@@ -9,7 +9,7 @@ import gc # เพิ่มไว้ที่หัวไฟล์
 from umqtt.simple import MQTTClient
 from tft_control import TFTDisplay, C_BLACK, C_WHITE, C_YELLOW, COLOR_BTN_ON, COLOR_BTN_OFF, COLOR_TEMP, COLOR_HUMID
 sysname : str = "Eagle Eye Legion"
-version : str = "1.0.1"
+version : str = "1.0.2"
 
 # --- 1. Hardware Setup ---
 relay1 = Pin(14, Pin.OUT, value=1)
