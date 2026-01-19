@@ -2,7 +2,7 @@
 
 # --- WiFi & OTA ---
 WIFI_CONFIGS = [
-  ('WK_AIS_2.4G', '0813996766'),
+  ('WK_AIS_2.4G', '0813996766') ,
   ('Galaxy A7189EE', '12345678')
 ]
 
@@ -10,7 +10,6 @@ WIFI_CONFIGS = [
 OTA_USER = "wasankds"
 OTA_REPO = "pico-ota"
 OTA_DIR  = "pico-switches-box"
-# OTA_FILES = ["main.py",  "wifi_manager.py", "tft_control.py", "config.py"]
 OTA_FILES = ["main.py",  "wifi_manager.py", "tft_control.py"]
 
 # --- MQTT Settings ---
@@ -24,5 +23,7 @@ TOPIC_S1_STATUS = DEVICE_ID + "/s1/status"
 TOPIC_S2_ACTION = DEVICE_ID + "/s2/action"
 TOPIC_S2_STATUS = DEVICE_ID + "/s2/status"
 TOPIC_QUERY     = DEVICE_ID + "/system/query"
-TOPIC_AVAIL     = DEVICE_ID + "/system/availability"    
-TOPIC_SENSOR_DHT = DEVICE_ID + "/sensor/dht"            # ส่วนของเซนเซอร์
+TOPIC_AVAIL     = DEVICE_ID + "/system/availability"
+TOPIC_UPDATE    = DEVICE_ID + "/system/update"
+TOPIC_SENSOR_DHT  = DEVICE_ID + "/sensor/dht"
+

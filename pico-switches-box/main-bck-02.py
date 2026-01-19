@@ -46,68 +46,18 @@ def send_all_status(mqtt_client):
     print("MQTT Status Synced")
   except: pass
 
-# --- เพิ่มฟังก์ชันนี้เพื่อจัดการ OTA โดยเฉพาะ ---
-def trigger_ota():
-    global mqtt_connected, client
-    print("Received Update Command via MQTT")
-    
-    # 1. หยุดการทำงาน MQTT ก่อนเพื่อเคลียร์ Memory
-    try:
-        if client:
-            client.publish(config.TOPIC_AVAIL, "UPDATING", retain=True)
-            utime.sleep_ms(500)
-            client.disconnect()
-    except: pass
-    
-    # 2. ล้างหน้าจอเข้าสู่โหมด OTA (วาดครั้งเดียวจบ)
-    tft.fill_rect(0, 0, 320, 240, C_BLACK)
-    tft.draw_text(60, 100, "SYSTEM UPDATE", C_YELLOW, 2)
-    tft.draw_text(50, 130, "DOWNLOADING FILES...", C_WHITE, 1)
-    
-    # 3. เริ่มกระบวนการ Senko OTA
-    try:
-        import senko
-        OTA = senko.Senko(user=config.OTA_USER, repo=config.OTA_REPO, 
-                         working_dir=config.OTA_DIR, files=config.OTA_FILES)
-        
-        if OTA.update():
-            tft.fill_rect(0, 0, 320, 240, COLOR_BTN_ON)
-            tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
-            utime.sleep(2)
-            machine.reset()
-        else:
-            tft.draw_text(60, 160, "ALREADY UP TO DATE", C_WHITE, 1)
-            utime.sleep(2)
-            machine.reset() # รีบูตเพื่อให้ระบบกลับมาเริ่มต้นใหม่สะอาดๆ
-    except Exception as e:
-        print("OTA Error:", e)
-        tft.fill_rect(0, 0, 320, 240, COLOR_BTN_OFF)
-        tft.draw_text(20, 110, "OTA FAILED!", C_WHITE, 2)
-        utime.sleep(2)
-        machine.reset()
-        
-# --- on_message ให้รองรับคำสั่งจาก Node.js ---
 def on_message(topic, msg):
     global needs_to_send_status
-    t = topic.decode()
-    m = msg.decode().upper()
+    t, m = topic.decode(), msg.decode().upper()
     
-    # ตรวจสอบ Topic จาก Node.js (deviceId/system/update)
-    if t.endswith(config.TOPIC_UPDATE) and m == "UPDATE":
-        trigger_ota()
-        return # ออกจากฟังก์ชันทันที
-    
-    # คำสั่งควบคุม Relay เดิม
     if t == config.TOPIC_S1_ACTION:
         btn1["state"] = (m == "ON")
         relay1.value(0 if btn1["state"] else 1)
         draw_btn(btn1)
-        
     elif t == config.TOPIC_S2_ACTION:
         btn2["state"] = (m == "ON")
         relay2.value(0 if btn2["state"] else 1)
         draw_btn(btn2)
-    
     needs_to_send_status = True
 
 def try_mqtt_connect():
@@ -117,14 +67,10 @@ def try_mqtt_connect():
         client.set_callback(on_message)
         client.set_last_will(config.TOPIC_AVAIL, "OFFLINE", retain=True, qos=1)
         client.connect()
-        # sub
         client.subscribe(config.TOPIC_S1_ACTION)
         client.subscribe(config.TOPIC_S2_ACTION)
         client.subscribe(config.TOPIC_QUERY)
-        client.subscribe(config.TOPIC_UPDATE)
-        # pub
         client.publish(config.TOPIC_AVAIL, "ONLINE", retain=True, qos=1)
-        
         mqtt_connected = True
         return True
     except:
@@ -159,34 +105,15 @@ def send_dht_data(mqtt_client):
         mqtt_client.publish(config.TOPIC_SENSOR_DHT, msg)
     except: pass
 
-
-
-# --- 4. Startup Sequence (แบบละเอียด เช็คสถานะได้) ---
+# --- 4. Startup Sequence ---
 tft.fill_rect(0, 0, 320, 240, C_BLACK)
-tft.draw_text(20, 50, "CONNECTING WIFI...", C_WHITE, 2)
+tft.draw_text(40, 100, "SYSTEM STARTING...", C_WHITE, 2)
 
-# เชื่อมต่อ Wi-Fi และรายงานผลบนจอ
 if wifi_manager.connect_wifi(config.WIFI_CONFIGS):
-    tft.draw_text(20, 80, "WIFI: CONNECTED", COLOR_BTN_ON, 2)
-    
-    # ตั้งเวลา
-    try: 
-        ntptime.settime()
-        tft.draw_text(20, 110, "TIME: SYNC OK", C_WHITE, 2)
-    except: 
-        tft.draw_text(20, 110, "TIME: SYNC FAILED", C_YELLOW, 2)
-    
-    # เชื่อมต่อ MQTT
-    tft.draw_text(20, 140, "CONNECTING MQTT...", C_WHITE, 2)
-    if try_mqtt_connect():
-        tft.draw_text(20, 170, "MQTT: ONLINE", COLOR_BTN_ON, 2)
-    else:
-        tft.draw_text(20, 170, "MQTT: FAILED", COLOR_BTN_OFF, 2)
-else:
-    tft.draw_text(20, 80, "WIFI: FAILED", COLOR_BTN_OFF, 2)
+    try: ntptime.settime()
+    except: pass
+    try_mqtt_connect()
 
-# หน่วงเวลาให้ดูสถานะสักครู่ก่อนเข้าหน้าหลัก
-utime.sleep(2)
 tft.fill_rect(0, 0, 320, 240, C_BLACK)
 draw_btn(btn1); draw_btn(btn2)
 
