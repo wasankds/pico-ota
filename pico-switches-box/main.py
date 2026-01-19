@@ -138,11 +138,18 @@ def send_dht_data(mqtt_client):
 
 
 def run_ota():
-    # ล้างจอทั้งหมดก่อนเริ่มกระบวนการเพื่อความสะอาด
-    tft.fill_rect(0, 0, 320, 240, C_BLACK)
-    tft.draw_text(60, 110, "CHECKING UPDATE...", C_WHITE, 2)
+  
+    # ใช้ global เพื่อไปรีเซ็ตค่าสถานะหน้าจอปกติ
+    global old_t, old_h, old_time
     
+    # หยุดการอัปเดตหน้าจอปกติโดยการล้างค่า Temp/Time
+    old_t, old_h, old_time = "", "", ""
+  
     try:
+        # ล้างจอทั้งหมดก่อนเริ่มกระบวนการเพื่อความสะอาด
+        tft.fill_rect(0, 0, 320, 240, C_BLACK)
+        tft.draw_text(60, 110, "CHECKING UPDATE...", C_WHITE, 2)
+        
         OTA = senko.Senko(
           user=config.OTA_USER, 
           repo=config.OTA_REPO,
@@ -156,18 +163,19 @@ def run_ota():
           tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
           utime.sleep(2)
           machine.reset() # Restart เครื่องทันที
+          
         else:
           tft.fill_rect(0, 100, 320, 40, C_BLACK) # ล้างแถบกลางจอ
           tft.draw_text(60, 140, "ALREADY UP TO DATE", C_YELLOW, 2)
           utime.sleep(2)
           
-        # ก่อนออกจากฟังก์ชัน ให้วาดทุกอย่างใหม่ ---
-        tft.fill_rect(0, 0, 320, 240, C_BLACK)
-        draw_btn(btn1)
-        draw_btn(btn2)
-        # รีเซ็ตตัวแปรหน้าจอเพื่อให้ update_info() วาดค่าใหม่ทันที
-        global old_t, old_h, old_time
-        old_t, old_h, old_time = "", "", ""
+        # # ก่อนออกจากฟังก์ชัน ให้วาดทุกอย่างใหม่ ---
+        # tft.fill_rect(0, 0, 320, 240, C_BLACK)
+        # draw_btn(btn1)
+        # draw_btn(btn2)
+        # # รีเซ็ตตัวแปรหน้าจอเพื่อให้ update_info() วาดค่าใหม่ทันที
+        # global old_t, old_h, old_time
+        # old_t, old_h, old_time = "", "", ""
             
     except Exception as e:
         tft.fill_rect(0, 0, 320, 240, COLOR_BTN_OFF) # จอแดงแจ้งว่าพลาด
@@ -276,16 +284,17 @@ while True:
             tft.fill_rect(80, 210, 220, 30, C_BLACK)
             ota_is_pressing = False
 
-    # 6.4 อัปเดตข้อมูลบนจอ (ทุก 1 วินาที)
-    if utime.ticks_diff(now, last_tick) > 1000:
-      update_info() # อัปเดตนาฬิกาและตัวเลขบนจอ
-      
-      # ส่งค่าไปที่เว็บทุก 10 วินาที
-      if utime.ticks_diff(now, last_dht_send) > 10000:
-        if mqtt_connected:
-          send_dht_data(client)
-          last_dht_send = now
-            
-      last_tick = now
+    # 6.4 อัปเดตข้อมูลบนจอ (จะทำงานเฉพาะตอนที่ "ไม่ได้" กำลังกด OTA)
+    if not ota_is_pressing:
+      if utime.ticks_diff(now, last_tick) > 1000:
+        update_info() # อัปเดตนาฬิกาและตัวเลขบนจอ
+        
+        # ส่งค่าไปที่เว็บทุก 10 วินาที
+        if utime.ticks_diff(now, last_dht_send) > 10000:
+          if mqtt_connected:
+            send_dht_data(client)
+            last_dht_send = now
+              
+        last_tick = now
         
     utime.sleep_ms(100)
