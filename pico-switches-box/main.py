@@ -257,22 +257,32 @@ while True:
       if not ota_is_pressing:
           ota_touch_start_time = now
           ota_is_pressing = True
+          ota_text_drawn = False # รีเซ็ตเมื่อเริ่มแตะใหม่
       else:
         duration = utime.ticks_diff(now, ota_touch_start_time)
         if duration > 10000:
-          ota_is_pressing = False 
-          run_ota()
+          ota_is_pressing = False
+          # วาดข้อความแจ้งเริ่ม OTA เพียงครั้งเดียว
+          if not ota_text_drawn:
+              tft.fill_rect(0, 0, 320, 240, C_BLACK)
+              tft.draw_text(60, 110, "STARTING OTA...", C_WHITE, 2)
+              ota_text_drawn = True
+          
+          run_ota() # เข้าสู่ฟังก์ชัน Senko
+          
         elif duration > 1000:
-          # แสดงวินาทีที่เหลือ (คำนวณถอยหลัง)
           sec = 10 - (duration // 1000)
-          # ล้างพื้นที่เฉพาะจุดที่จะเขียนตัวเลข (ล้างก่อนเขียนทุกครั้ง)
-          tft.fill_rect(80, 210, 220, 30, C_BLACK) 
-          tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
+          # เพิ่มเช็คกันวาดซ้ำ: ให้วาดเฉพาะตอนที่ "วินาทีเปลี่ยน" เท่านั้น
+          if 'last_sec' not in locals() or last_sec != sec:
+              tft.fill_rect(80, 210, 220, 30, C_BLACK) # ลบเฉพาะจุด
+              tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
+              last_sec = sec
     else:
       # ถ้านิ้วปล่อย ให้เคลียร์ Countdown
       if ota_is_pressing:
-        tft.fill_rect(80, 210, 220, 30, C_BLACK)
-        ota_is_pressing = False
+          tft.fill_rect(80, 210, 220, 30, C_BLACK)
+          ota_is_pressing = False
+          ota_text_drawn = False
 
     # 6.4 อัปเดตข้อมูลบนจอ (ทุก 1 วินาที)
     if utime.ticks_diff(now, last_tick) > 1000:
