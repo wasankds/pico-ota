@@ -143,20 +143,28 @@ def run_ota():
     
     try:
         OTA = senko.Senko(
-            user=config.OTA_USER, 
-            repo=config.OTA_REPO,
-            working_dir=config.OTA_DIR, 
-            files=config.OTA_FILES
+          user=config.OTA_USER, 
+          repo=config.OTA_REPO,
+          working_dir=config.OTA_DIR, 
+          files=config.OTA_FILES
         )
         
         if OTA.update():
-            tft.fill_rect(0, 0, 320, 240, COLOR_BTN_ON) # จอเขียวแจ้งว่าสำเร็จ
-            tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
-            utime.sleep(2)
-            machine.reset() # Restart เครื่องทันที
+          tft.fill_rect(0, 0, 320, 240, COLOR_BTN_ON) # จอเขียวแจ้งว่าสำเร็จ
+          tft.draw_text(40, 110, "UPDATED! REBOOTING...", C_WHITE, 2)
+          utime.sleep(2)
+          machine.reset() # Restart เครื่องทันที
         else:
-            tft.draw_text(60, 140, "ALREADY UP TO DATE", C_YELLOW, 2)
-            utime.sleep(2)
+          tft.draw_text(60, 140, "ALREADY UP TO DATE", C_YELLOW, 2)
+          utime.sleep(2)
+          
+        # ก่อนออกจากฟังก์ชัน ให้วาดทุกอย่างใหม่ ---
+        tft.fill_rect(0, 0, 320, 240, C_BLACK)
+        draw_btn(btn1)
+        draw_btn(btn2)
+        # รีเซ็ตตัวแปรหน้าจอเพื่อให้ update_info() วาดค่าใหม่ทันที
+        global old_t, old_h, old_time
+        old_t, old_h, old_time = "", "", ""
             
     except Exception as e:
         tft.fill_rect(0, 0, 320, 240, COLOR_BTN_OFF) # จอแดงแจ้งว่าพลาด
@@ -223,7 +231,7 @@ while True:
     if pos:
       tx, ty = pos
       
-      # ก. จัดการการกดปุ่มปกติ (สั้น)
+      # ก. จัดการการกดปุ่มปกติ
       if utime.ticks_diff(now, last_press) > 300:
         for btn in [btn1, btn2]:
           if btn["x"] <= tx <= btn["x"]+btn["w"] and btn["y"] <= ty <= btn["y"]+btn["h"]:
@@ -243,25 +251,25 @@ while True:
             last_press = now
             
       # ข. จัดการ OTA (ค้าง 10 วินาที)
-        if not ota_is_pressing:
-            ota_touch_start_time = now
-            ota_is_pressing = True
-        else:
-            duration = utime.ticks_diff(now, ota_touch_start_time)
-            if duration > 10000:
-                ota_is_pressing = False 
-                run_ota() # เรียกฟังก์ชันที่เราสร้างไว้
-            elif duration > 1000:
-                # แสดงวินาทีที่เหลือ (คำนวณถอยหลัง)
-                sec = 10 - (duration // 1000)
-                # วาดสีดำทับเลขเก่าก่อนวาดเลขใหม่เพื่อไม่ให้เลขซ้อนกัน
-                tft.fill_rect(100, 210, 150, 25, C_BLACK) 
-                tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
+      if not ota_is_pressing:
+          ota_touch_start_time = now
+          ota_is_pressing = True
+      else:
+        duration = utime.ticks_diff(now, ota_touch_start_time)
+        if duration > 10000:
+          ota_is_pressing = False 
+          run_ota()
+        elif duration > 1000:
+          # แสดงวินาทีที่เหลือ (คำนวณถอยหลัง)
+          sec = 10 - (duration // 1000)
+          # ล้างพื้นที่เฉพาะจุดที่จะเขียนตัวเลข (ล้างก่อนเขียนทุกครั้ง)
+          tft.fill_rect(80, 210, 220, 30, C_BLACK) 
+          tft.draw_text(100, 210, "OTA IN {} SEC".format(sec), C_YELLOW, 2)
     else:
-        # ถ้านิ้วปล่อย ให้เคลียร์ Countdown
-        if ota_is_pressing:
-            tft.fill_rect(100, 210, 150, 25, C_BLACK)
-            ota_is_pressing = False
+      # ถ้านิ้วปล่อย ให้เคลียร์ Countdown
+      if ota_is_pressing:
+        tft.fill_rect(80, 210, 220, 30, C_BLACK)
+        ota_is_pressing = False
 
     # 6.4 อัปเดตข้อมูลบนจอ (ทุก 1 วินาที)
     if utime.ticks_diff(now, last_tick) > 1000:
