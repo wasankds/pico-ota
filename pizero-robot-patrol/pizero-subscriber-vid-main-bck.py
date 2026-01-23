@@ -1,24 +1,3 @@
-
-""" 
-สร้าง Ram Drive ด้วย 
-rm -rf /home/wasankds/mqtt-subscribers/videos/*
-sudo chmod 777 /home/wasankds/mqtt-subscribers/videos
-
-
-แก้ไขไฟล์ fstab
-sudo nano /etc/fstab
-
-เพิ่มบรรทัดนี้ลงไปท้ายสุด
-tmpfs  /home/wasankds/mqtt-subscribers/videos  tmpfs  defaults,noatime,nosuid,size=150m  0  0
-
-สั่ง Mount เพื่อเริ่มใช้งาน
-sudo mount -a
-
-ตรวจสอบว่าสำเร็จหรือไม่
-df -h | grep videos
-
-"""
-
 import threading
 import paho.mqtt.client as mqtt
 import pigpio
@@ -32,13 +11,9 @@ import shutil  # สำหรับย้ายไฟล์
 from picamera2 import Picamera2
 
 # --- CONFIGURATION ---
-SYSNAME = "PiZero2W Robot"
-SYSVER = "2.0.0"
-MQTT_BROKER = "192.168.1.100"
-DEVICE_ID = "pizero-001"
-TOPIC_CONTROL =  f"{DEVICE_ID}/robot/control"
+MQTT_BROKER = "192.168.1.131"
 
-# (PiZero2W) แยกโฟลเดอร์ RAM และ Storage จริง
+# แยกโฟลเดอร์ RAM และ Storage จริง
 VIDEO_RAM = "/home/wasankds/mqtt-subscribers/videos_ram"       # tmpfs (150MB)
 VIDEO_STORAGE = "/home/wasankds/mqtt-subscribers/video_storage" # SD Card
 os.makedirs(VIDEO_RAM, exist_ok=True)
@@ -52,7 +27,7 @@ VID_WIDTH, VID_HEIGHT = 480, 360
 JPG_QUALITY = 35
 
 PAN_PIN, TILT_PIN = 17, 27
-IN1, IN2, IN3, IN4 = 6, 13, 19, 26
+IN1, IN2, IN3, IN4 = 12, 13, 19, 26
 
 # --- GLOBAL VARIABLES ---
 picam2 = None
@@ -159,10 +134,10 @@ def stream_server():
     while True:
         conn, addr = s.accept()
         try:
-          while True:
-            if current_jpeg:
-              conn.sendall(struct.pack("<L", len(current_jpeg)) + current_jpeg)
-            time.sleep(0.1)
+            while True:
+                if current_jpeg:
+                    conn.sendall(struct.pack("<L", len(current_jpeg)) + current_jpeg)
+                time.sleep(0.1)
         except: conn.close()
 
 def auto_monitor_loop():
@@ -222,26 +197,22 @@ def on_message(client, userdata, msg):
 
 # --- MAIN ---
 if __name__ == "__main__":
-  
-  if init_hardware():
-    picam2 = Picamera2()
-    config = picam2.create_video_configuration(main={"size": (VID_WIDTH, VID_HEIGHT), "format": "RGB888"})
-    config["transform"].vflip = True
-    config["transform"].hflip = True
-    picam2.configure(config)
-    picam2.start()
+    if init_hardware():
+        picam2 = Picamera2()
+        config = picam2.create_video_configuration(main={"size": (VID_WIDTH, VID_HEIGHT), "format": "RGB888"})
+        config["transform"].vflip = True
+        config["transform"].hflip = True
+        picam2.configure(config)
+        picam2.start()
 
-    threading.Thread(target=capture_loop, daemon=True).start()
-    threading.Thread(target=stream_server, daemon=True).start()
-    threading.Thread(target=record_worker, daemon=True).start()
-    threading.Thread(target=auto_monitor_loop, daemon=True).start()
+        threading.Thread(target=capture_loop, daemon=True).start()
+        threading.Thread(target=stream_server, daemon=True).start()
+        threading.Thread(target=record_worker, daemon=True).start()
+        threading.Thread(target=auto_monitor_loop, daemon=True).start()
 
-    client = mqtt.Client()
-    client.on_message = on_message
-    # 60 คือ keepalive  
-    # keepalive คือ ระยะเวลาที่ไคลเอนต์จะส่งข้อความว่างเปล่าไปยังเซิร์ฟเวอร์ MQTT เพื่อแจ้งว่าไคลเอนต์ยังคงเชื่อมต่ออยู่
-    client.connect(MQTT_BROKER, 1883, 60) 
-    client.subscribe(TOPIC_CONTROL)
-    
-    print("[*] ROBOT ONLINE - RAM -> SD STORAGE MODE")
-    client.loop_forever()
+        client = mqtt.Client()
+        client.on_message = on_message
+        client.connect(MQTT_BROKER, 1883, 60)
+        client.subscribe("robot/control")
+        print("[*] ROBOT ONLINE - RAM -> SD STORAGE MODE")
+        client.loop_forever()

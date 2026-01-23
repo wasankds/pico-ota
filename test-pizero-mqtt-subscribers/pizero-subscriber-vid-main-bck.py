@@ -11,19 +11,14 @@ import shutil  # สำหรับย้ายไฟล์
 from picamera2 import Picamera2
 
 # --- CONFIGURATION ---
-SYSNAME = "EagleEyeLegion - Robot Patrol Subscriber"
-SYSVER = "2.0.0"
-MQTT_BROKER = "192.168.1.100"
-DEVICE_ID = "pizero-001"
-TOPIC_CONTROL =  f"{DEVICE_ID}/robot/control"
+MQTT_BROKER = "192.168.1.131"
 
-# (PiZero2W) แยกโฟลเดอร์ RAM และ Storage จริง
+# แยกโฟลเดอร์ RAM และ Storage จริง
 VIDEO_RAM = "/home/wasankds/mqtt-subscribers/videos_ram"       # tmpfs (150MB)
 VIDEO_STORAGE = "/home/wasankds/mqtt-subscribers/video_storage" # SD Card
 os.makedirs(VIDEO_RAM, exist_ok=True)
 os.makedirs(VIDEO_STORAGE, exist_ok=True)
 
-# --- Camera & Video Settings ---
 MAX_STORAGE_FILES = 1000 # คุมจำนวนไฟล์บน SD Card
 MAX_DURATION = 300       # 5 นาที (กัน RAM เต็ม)
 ZERO_PORT = 8000
@@ -31,18 +26,17 @@ VID_FPS = 10
 VID_WIDTH, VID_HEIGHT = 480, 360 
 JPG_QUALITY = 35
 
-# --- HARDWARE PINS ---
 PAN_PIN, TILT_PIN = 17, 27
 IN1, IN2, IN3, IN4 = 12, 13, 19, 26
 
 # --- GLOBAL VARIABLES ---
 picam2 = None
-IS_RECORDING = False
-CURRENT_FRAME = None
-CURRENT_JPEG = None
-VIDEO_WRITER = None
-CURRENT_FILENAME = "" # เก็บชื่อไฟล์ที่กำลังอัดใน RAM
-PI = None
+is_recording = False
+current_frame = None
+current_jpeg = None
+video_writer = None
+current_filename = "" # เก็บชื่อไฟล์ที่กำลังอัดใน RAM
+pi = None
 
 curr_pan, curr_tilt = 1500, 1500
 target_pan, target_tilt = 1500, 1500 
@@ -54,24 +48,24 @@ video_queue = queue.Queue(maxsize=30)
 # --- FUNCTIONS ---
 
 def init_hardware():
-  global PI
-  PI = pigpio.pi()
-  if not PI.connected: return False
-  for pin in [IN1, IN2, IN3, IN4]:
-      PI.set_mode(pin, pigpio.OUTPUT)
-      PI.write(pin, 0)
-  PI.set_mode(PAN_PIN, pigpio.OUTPUT)
-  PI.set_mode(TILT_PIN, pigpio.OUTPUT)
-  PI.set_servo_pulsewidth(PAN_PIN, 1500)
-  PI.set_servo_pulsewidth(TILT_PIN, 1500)
-  return True
+    global pi
+    pi = pigpio.pi()
+    if not pi.connected: return False
+    for pin in [IN1, IN2, IN3, IN4]:
+        pi.set_mode(pin, pigpio.OUTPUT)
+        pi.write(pin, 0)
+    pi.set_mode(PAN_PIN, pigpio.OUTPUT)
+    pi.set_mode(TILT_PIN, pigpio.OUTPUT)
+    pi.set_servo_pulsewidth(PAN_PIN, 1500)
+    pi.set_servo_pulsewidth(TILT_PIN, 1500)
+    return True
 
 def wheels(l1, l2, r1, r2):
-    if PI and PI.connected:
-        PI.write(IN1, l1)
-        PI.write(IN2, l2)
-        PI.write(IN3, r1)
-        PI.write(IN4, r2)
+    if pi and pi.connected:
+        pi.write(IN1, l1)
+        pi.write(IN2, l2)
+        pi.write(IN3, r1)
+        pi.write(IN4, r2)
 
 def manage_storage_cleanup():
     """คุมปริมาณไฟล์บน SD Card (ไม่ให้เต็ม)"""
@@ -84,20 +78,20 @@ def manage_storage_cleanup():
         except: break
 
 def stop_recording_proc():
-    global IS_RECORDING, VIDEO_WRITER, CURRENT_FILENAME
-    if IS_RECORDING:
-        IS_RECORDING = False
+    global is_recording, video_writer, current_filename
+    if is_recording:
+        is_recording = False
         time.sleep(0.5) # รอให้คิวสุดท้ายเขียนลง RAM เสร็จ
-        if VIDEO_WRITER:
-            VIDEO_WRITER.release()
-            VIDEO_WRITER = None
+        if video_writer:
+            video_writer.release()
+            video_writer = None
             
             # ย้ายจาก RAM ไป SD Card
-            if os.path.exists(CURRENT_FILENAME):
+            if os.path.exists(current_filename):
                 try:
-                    dest = os.path.join(VIDEO_STORAGE, os.path.basename(CURRENT_FILENAME))
-                    shutil.move(CURRENT_FILENAME, dest)
-                    print(f"[*] MOVED: {os.path.basename(CURRENT_FILENAME)} to SD Card")
+                    dest = os.path.join(VIDEO_STORAGE, os.path.basename(current_filename))
+                    shutil.move(current_filename, dest)
+                    print(f"[*] MOVED: {os.path.basename(current_filename)} to SD Card")
                 except Exception as e:
                     print(f"[!] Move Error: {e}")
         print("[*] RECORDING STOPPED")
@@ -105,27 +99,27 @@ def stop_recording_proc():
 # --- THREAD WORKERS ---
 
 def capture_loop():
-    global CURRENT_FRAME, CURRENT_JPEG
+    global current_frame, current_jpeg
     while True:
         try:
             frame = picam2.capture_array()
             if frame is not None:
-                CURRENT_FRAME = frame
-                if IS_RECORDING:
+                current_frame = frame
+                if is_recording:
                     try: video_queue.put_nowait(frame)
                     except: pass
                 _, jpg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), JPG_QUALITY])
-                CURRENT_JPEG = jpg.tobytes()
+                current_jpeg = jpg.tobytes()
             time.sleep(1.0 / VID_FPS)
         except: time.sleep(0.5)
 
 def record_worker():
-    global IS_RECORDING, VIDEO_WRITER
+    global is_recording, video_writer
     while True:
-        if IS_RECORDING and VIDEO_WRITER is not None:
+        if is_recording and video_writer is not None:
             try:
                 f = video_queue.get(timeout=0.1)
-                VIDEO_WRITER.write(f)
+                video_writer.write(f)
                 video_queue.task_done()
             except: continue
         else:
@@ -140,16 +134,16 @@ def stream_server():
     while True:
         conn, addr = s.accept()
         try:
-          while True:
-            if CURRENT_JPEG:
-              conn.sendall(struct.pack("<L", len(CURRENT_JPEG)) + CURRENT_JPEG)
-            time.sleep(0.1)
+            while True:
+                if current_jpeg:
+                    conn.sendall(struct.pack("<L", len(current_jpeg)) + current_jpeg)
+                time.sleep(0.1)
         except: conn.close()
 
 def auto_monitor_loop():
-    global curr_pan, curr_tilt, target_pan, target_tilt, IS_RECORDING, recording_start_time
+    global curr_pan, curr_tilt, target_pan, target_tilt, is_recording, recording_start_time
     while True:
-        if IS_RECORDING and (time.time() - recording_start_time) >= MAX_DURATION:
+        if is_recording and (time.time() - recording_start_time) >= MAX_DURATION:
             stop_recording_proc()
 
         if servo_dir == 'pan_l':   target_pan = max(500, target_pan - STEP)
@@ -162,18 +156,16 @@ def auto_monitor_loop():
         if curr_tilt < target_tilt: curr_tilt = min(target_tilt, curr_tilt + STEP)
         elif curr_tilt > target_tilt: curr_tilt = max(target_tilt, curr_tilt - STEP)
         
-        if PI and PI.connected:
-            PI.set_servo_pulsewidth(PAN_PIN, curr_pan)
-            PI.set_servo_pulsewidth(TILT_PIN, curr_tilt)
+        if pi and pi.connected:
+            pi.set_servo_pulsewidth(PAN_PIN, curr_pan)
+            pi.set_servo_pulsewidth(TILT_PIN, curr_tilt)
         time.sleep(0.05)
 
 # --- MQTT HANDLER ---
 
 def on_message(client, userdata, msg):
-
-    global IS_RECORDING, VIDEO_WRITER, servo_dir, recording_start_time, target_pan, target_tilt, CURRENT_FILENAME
+    global is_recording, video_writer, servo_dir, recording_start_time, target_pan, target_tilt, current_filename
     command = msg.payload.decode().strip().lower()
-    print(f"Received: {command}")
     
     if command == "forward":    wheels(0, 1, 1, 0)
     elif command == "backward": wheels(1, 0, 0, 1)
@@ -181,17 +173,15 @@ def on_message(client, userdata, msg):
     elif command == "right":     wheels(1, 0, 1, 0)
     elif command in ["stop", "wheels_stop"]: wheels(0, 0, 0, 0)
 
-    # --- คำสั่งบันทึกวิดีโอ ---
     elif command in ["rec_start", "start record"]:
-      if not IS_RECORDING:
-        manage_storage_cleanup()
-        
-        CURRENT_FILENAME = f"{VIDEO_RAM}/bot_{time.strftime('%H%m%d_%H%M%S')}.avi"
-        fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-        VIDEO_WRITER = cv2.VideoWriter(CURRENT_FILENAME, fourcc, VID_FPS, (VID_WIDTH, VID_HEIGHT))
-        recording_start_time = time.time()
-        IS_RECORDING = True
-        print(f"[*] RECORDING TO RAM: {CURRENT_FILENAME}")
+        if not is_recording:
+            manage_storage_cleanup()
+            current_filename = f"{VIDEO_RAM}/bot_{time.strftime('%H%m%d_%H%M%S')}.avi"
+            fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            video_writer = cv2.VideoWriter(current_filename, fourcc, VID_FPS, (VID_WIDTH, VID_HEIGHT))
+            recording_start_time = time.time()
+            is_recording = True
+            print(f"[*] RECORDING TO RAM: {current_filename}")
 
     elif command in ["rec_stop", "stop record"]:
         stop_recording_proc()
@@ -207,26 +197,22 @@ def on_message(client, userdata, msg):
 
 # --- MAIN ---
 if __name__ == "__main__":
-  
-  if init_hardware():
-    picam2 = Picamera2()
-    config = picam2.create_video_configuration(main={"size": (VID_WIDTH, VID_HEIGHT), "format": "RGB888"})
-    config["transform"].vflip = True
-    config["transform"].hflip = True
-    picam2.configure(config)
-    picam2.start()
+    if init_hardware():
+        picam2 = Picamera2()
+        config = picam2.create_video_configuration(main={"size": (VID_WIDTH, VID_HEIGHT), "format": "RGB888"})
+        config["transform"].vflip = True
+        config["transform"].hflip = True
+        picam2.configure(config)
+        picam2.start()
 
-    threading.Thread(target=capture_loop, daemon=True).start()
-    threading.Thread(target=stream_server, daemon=True).start()
-    threading.Thread(target=record_worker, daemon=True).start()
-    threading.Thread(target=auto_monitor_loop, daemon=True).start()
+        threading.Thread(target=capture_loop, daemon=True).start()
+        threading.Thread(target=stream_server, daemon=True).start()
+        threading.Thread(target=record_worker, daemon=True).start()
+        threading.Thread(target=auto_monitor_loop, daemon=True).start()
 
-    client = mqtt.Client()
-    client.on_message = on_message
-    # 60 คือ keepalive  
-    # keepalive คือ ระยะเวลาที่ไคลเอนต์จะส่งข้อความว่างเปล่าไปยังเซิร์ฟเวอร์ MQTT เพื่อแจ้งว่าไคลเอนต์ยังคงเชื่อมต่ออยู่
-    client.connect(MQTT_BROKER, 1883, 60) 
-    client.subscribe(TOPIC_CONTROL)
-    
-    print("[*] ROBOT ONLINE - RAM -> SD STORAGE MODE")
-    client.loop_forever()
+        client = mqtt.Client()
+        client.on_message = on_message
+        client.connect(MQTT_BROKER, 1883, 60)
+        client.subscribe("robot/control")
+        print("[*] ROBOT ONLINE - RAM -> SD STORAGE MODE")
+        client.loop_forever()
