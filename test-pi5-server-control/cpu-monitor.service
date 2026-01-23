@@ -1,0 +1,24 @@
+[Unit]
+Description=CPU Monitor and Fan Control Service
+After=network.target
+
+[Service]
+
+# ระบุ User ที่รัน (เป็นชื่อ User ของคุณ)
+User=wasankds
+
+# ระบุ Folder ที่เก็บไฟล์
+WorkingDirectory=/home/wasankds/server-control
+
+# คำสั่งรัน (ระบุค่า Interval เป็น 1 หรือตามที่ต้องการท้ายคำสั่ง)
+ExecStart=/usr/bin/python3 /home/wasankds/server-control/cpu-monitor.py 1
+
+# ถ้าโปรแกรมพัง ให้เริ่มใหม่ภายใน 5 วินาที
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+

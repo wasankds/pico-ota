@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Robot Control</title>
+  <style>
+    button {
+      width: 100px;
+      height: 50px;
+      margin: 5px;
+      font-weight: bold;
+    }
+
+    .container {
+      text-align: center;
+      margin-top: 50px;
+    }
+  </style>
+</head>
+ 
+<body>
+  <div class="container">
+    <h2>Robot Wheel Control</h2>
+    <button onclick="send('pan_left')">Pan Left</button>
+    <button onclick="send('pan_center')">Pan Center</button>
+    <button onclick="send('pan_right')">Pan Right</button>
+
+    <button onclick="send('tilt_up')">Tilt Up</button>
+    <button onclick="send('tilt_center')">Tilt Center</button>
+    <button onclick="send('tilt_down')">Tilt Down</button>
+  </div>
+
+  <script>
+    function send(command) {
+      fetch(`/control?cmd=${command}`);
+    }
+  </script>
+</body>
+
+</html>

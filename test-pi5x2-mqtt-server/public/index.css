@@ -1,0 +1,150 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+  background: #2c3e50;
+  color: white;
+  touch-action: manipulation;
+  margin: 0;
+  padding: 10px; /* ลด padding รอบขอบจอ */
+}
+
+.control-panel {
+  display: flex;
+  justify-content: center;
+  align-items: stretch; 
+  flex-wrap: nowrap; /* บังคับให้เรียงแถวเดียวเสมอ */
+  gap: 10px;        /* ลดช่องว่างระหว่างกรอบ */
+  margin: 10px auto;
+  max-width: 100%;
+}
+
+/* แผงควบคุม ซ้าย-ขวา */ 
+.group {
+  background: #34495e;
+  padding: 15px;      /* ลด padding ในกรอบ */
+  border-radius: 15px;
+  min-width: 220px;   /* ลดขนาดความกว้างขั้นต่ำ */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.group h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #bdc3c7;
+  font-size: 0.9em;    /* ลดขนาดตัวอักษรหัวข้อ */
+  letter-spacing: 1px;
+}
+
+/* หน้าจอกลาง */
+.monitor-area {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.monitor-placeholder {
+  flex: 1;
+  background: #000;
+  border: 3px solid #1a252f;
+  border-radius: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #3498db;
+  font-weight: bold;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+/* ลดขนาดปุ่ม (D-Pad & Servo) */
+.d-pad, .servo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 65px); /* ลดขนาดช่องจาก 85px เป็น 65px */
+  grid-template-rows: repeat(3, 65px);    /* ลดขนาดช่องจาก 85px เป็น 65px */
+  gap: 8px;                               /* ลดช่องว่างระหว่างปุ่ม */
+  justify-content: center;
+}
+
+button {
+  width: 100%;
+  height: 100%;
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;      /* ลดขนาดตัวอักษรบนปุ่ม */
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s;
+  box-shadow: 0 3px #c0392b; /* ลดขนาดเงาปุ่ม */
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px #962d22;
+}
+
+
+
+/* ปรับแก้สีปุ่ม STOP และ CENTER กลับมาเป็นสีฟ้าสดใส */
+.btn-stop, .btn-center {
+  background: #3498db !important; /* บังคับใช้สีฟ้า */
+  box-shadow: 0 3px #2980b9 !important; /* เงาสีฟ้าเข้ม */
+}
+
+.btn-stop:active, .btn-center:active {
+  background: #2980b9 !important;
+  box-shadow: 0 1px #1c5982 !important;
+  transform: translateY(2px);
+}
+
+.btn-record {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #2c3e50; /* สีเทาเข้มตอนยังไม่เริ่ม */
+    color: white;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px #1a252f;
+}
+
+/* เมื่อกำลังบันทึก (เรียกผ่าน JS) */
+.recording-active {
+    background: #e74c3c !important; /* สีแดง */
+    box-shadow: 0 4px #c0392b !important;
+    animation: pulse-red 1.5s infinite;
+}
+
+/* ปุ่มว่างใน Grid (เผื่อกรณี HTML ยังมีเลข 1-9 ในช่องว่าง) */
+.spacer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@keyframes pulse-red {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+
+/* ปิดการทำงานของ Mobile Responsive แบบเดิม */
+/* ลบ @media (max-width: 1000px) อันเก่าออก หรือเปลี่ยนเป็นแบบนี้ */
+@media (max-height: 500px) {
+  /* ปรับแต่งเล็กน้อยสำหรับโหมดแนวนอนที่มีพื้นที่ความสูงน้อย */
+  body { padding: 5px; }
+  .group h3 { display: none; } /* ซ่อนหัวข้อเพื่อเพิ่มพื้นที่จอ */
+  .group { padding: 10px; }
+  .web-title{
+    font-size: 0.5rem;
+  }
+}

@@ -1,0 +1,99 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #121212;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  padding: 5px; /* ลด padding รอบตัวลง */
+  margin: 0;
+  overscroll-behavior-y: contain;
+}
+
+h2 {
+  margin: 5px 0; /* ลดระยะห่างหัวข้อ */
+  font-size: 18px; /* ลดขนาดตัวอักษรหัวข้อ */
+  color: #ccc;
+}
+
+/* ส่วนแสดงวิดีโอ ย้ายขึ้นมาด้านบนเพื่อให้เห็นชัดที่สุด */
+.video-container {
+  width: 100%;
+  max-width: 350px;
+  margin-top: 10px; /* ลดระยะห่าง */
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid #444;
+  background: #000;
+  aspect-ratio: 4 / 3;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-gap: 3px; /* ลดช่องว่างระหว่างปุ่ม */
+  max-width: 350px; /* บีบความกว้างลงเล็กน้อย */
+  width: 100%;
+  margin-top: 10px;
+}
+
+button {
+  /* เปลี่ยนจาก 1/1 เป็น 4/3 หรือระบุความสูง เพื่อให้ปุ่มเตี้ยลง */
+  height: 50px; 
+  font-size: 20px;
+  cursor: pointer;
+  background: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 12px;
+  box-shadow: 0 3px #000; /* ลดเงาให้ดูแบนขึ้น */
+  transition: 0.1s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+button:active {
+  box-shadow: 0 1px #000;
+  transform: translateY(2px);
+}
+
+.center-btn {
+  background: #004fb3;
+  border-color: #007bff;
+  font-size: 30px;
+}
+
+.control-row {
+  display: flex;
+  gap: 5px;
+  width: 100%;
+  max-width: 350px;
+  margin-top: 5px; /* ลดระยะห่างจาก 25px */
+}
+
+.control-row button {
+  flex: 1;
+  height: 45px; /* ลดความสูงปุ่ม Stop/Orbit */
+  font-size: 14px;
+  border-radius: 10px;
+}
+
+.pos-display {
+  margin-top: 5px; /* ลดระยะห่างจาก 30px */
+  padding: 5px;
+  background: #000;
+  border: 1px solid #333;
+  border-radius: 5px;
+  color: #39ff14;
+  font-family: 'Courier New', monospace;
+  width: 100%;
+  max-width: 350px;
+  text-align: center;
+  font-size: 12px;
+}
+

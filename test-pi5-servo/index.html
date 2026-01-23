@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Eagle Eye Control Mobile</title>
+  <style>
+    @import url('index.css');
+  </style>
+</head>
+
+<body>
+  <h2>PTZ Camera Control</h2>
+
+  <div class="grid-container">
+    <button onclick="moveByStep(-1, 1)">◤</button>
+    <button onclick="moveByStep(0, 1)">▲</button>
+    <button onclick="moveByStep(1, 1)">◥</button>
+
+    <button onclick="moveByStep(-1, 0)">◀</button>
+    <button class="center-btn" onclick="centerAll()">◎</button>
+    <button onclick="moveByStep(1, 0)">▶</button>
+
+    <button onclick="moveByStep(-1, -1)">◣</button>
+    <button onclick="moveByStep(0, -1)">▼</button>
+    <button onclick="moveByStep(1, -1)">◢</button>
+  </div>
+
+  <div class="control-row">
+    <button class="stop-btn" onclick="stopNow()">STOP 🛑</button>
+    <button class="orbit-btn" onclick="testOrbit()">ORBIT 🔄</button>
+  </div>
+
+  <div class="pos-display">
+    PAN: <span id="valPan">1500</span> | TILT: <span id="valTilt">1500</span>
+  </div>
+
+  <div class="video-container">
+      <img id="cameraStream" src="/video_feed" alt="Live Stream" 
+          style="width: 100%; background: #000;">
+  </div>
+
+
+  <script>
+    const IS_FLIP_VERTICAL = true; // เปลี่ยนเป็น true ถ้ากล้องหันกลับด้าน
+  </script>
+  <script src="index.js"></script>
+
+</body>
+
+</html>

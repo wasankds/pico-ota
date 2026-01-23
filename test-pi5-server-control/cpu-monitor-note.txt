@@ -1,0 +1,52 @@
+1. สร้างไฟล์ Service
+เปิด Terminal แล้วใช้คำสั่งสร้างไฟล์ใหม่ในระบบ:
+
+sudo nano /etc/systemd/system/cpu-monitor.service
+
+
+2. ใส่โค้ดนี้ลงไป (Copy & Paste)
+ตรวจสอบ Path ให้ตรงกับที่คุณใช้งานจริง ในที่นี้ผมอ้างอิงจากที่คุณให้มาคือ /home/wasankds/server-control/
+
+[Unit]
+Description=CPU Monitor and Fan Control Service
+After=network.target
+
+[Service]
+# ระบุ User ที่รัน (เป็นชื่อ User ของคุณ)
+User=wasankds
+# ระบุ Folder ที่เก็บไฟล์
+WorkingDirectory=/home/wasankds/server-control
+# คำสั่งรัน (ระบุค่า Interval เป็น 1 หรือตามที่ต้องการท้ายคำสั่ง)
+ExecStart=/usr/bin/python3 /home/wasankds/server-control/cpu-monitor-fan-control-3.py 1
+# ถ้าโปรแกรมพัง ให้เริ่มใหม่ภายใน 5 วินาที
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+3. สั่งให้ Service เริ่มทำงาน
+# 1. โหลดระบบใหม่เพื่อให้เห็นไฟล์ที่เราเพิ่งสร้าง
+sudo systemctl daemon-reload
+
+# 2. ตั้งค่าให้รันอัตโนมัติทุกครั้งที่เปิดเครื่อง (Enable)
+sudo systemctl enable cpu-monitor.service
+
+# 3. สั่งให้เริ่มทำงานทันที (Start)
+sudo systemctl start cpu-monitor.service
+
+
+
+เช็คว่าโปรแกรมทำงานอยู่หรือไม่:
+sudo systemctl status cpu-monitor.service
+
+หยุดการทำงาน:
+sudo systemctl stop cpu-monitor.service
+
+แก้ไขโค้ด .py แล้วต้องการให้มีผลทันที:
+sudo systemctl restart cpu-monitor.service
+
+ดู Log (เผื่อโปรแกรมไม่ทำงาน)
+journalctl -u cpu-monitor.service -f

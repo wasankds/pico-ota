@@ -1,0 +1,15 @@
+[Unit]
+Description=Egle-Eye Node App (npm run app)
+After=network.target
+
+[Service]
+Type=simple
+User=wasankds
+WorkingDirectory=/home/wasankds/egle-eye
+ExecStart=/usr/bin/npm run app
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
