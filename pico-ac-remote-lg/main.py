@@ -10,7 +10,7 @@ from umqtt.simple import MQTTClient
 # --- 0. System Info ---
 SYSNAME1 = "Eagle Eye Legion"
 SYSNAME2 = "AC Remote"
-SYSVER  = "1.0.0"
+SYSVER  = "1.0.1"
 
 # --- 1. Hardware Setup ---
 LED = Pin("LED", Pin.OUT)
@@ -89,9 +89,7 @@ def send_dht_data():
         except Exception as e:
             print(f"[DATA] DHT Try {i+1} Failed: {e}")
             utime.sleep_ms(500)
-    print("[DATA] DHT Final Error: Give up after 3 tries")
-
- 
+    print("[DATA] DHT Final Error: Give up after 3 tries") 
 
 def on_message(topic, msg):
     t = topic.decode()
@@ -161,7 +159,7 @@ if wifi_manager.connect_wifi(config.WIFI_CONFIGS):
     for _ in range(2): LED.on(); utime.sleep(0.1); LED.off(); utime.sleep(0.1)
     
     # 3. เริ่มต่อ MQTT
-    print("Connecting to MQTT...")
+    print(f"Connecting to MQTT Broker {config.MQTT_BROKER}")
     LED.on() # เปิดไฟค้างไว้ระหว่างรอ MQTT
     if try_mqtt_connect():
         LED.off()

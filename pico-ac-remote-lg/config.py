@@ -12,7 +12,7 @@ OTA_DIR  = "pico-ac-remote-lg"
 OTA_FILES = ["main.py", "wifi_manager.py", "config.py"]
 
 # --- MQTT Settings ---
-MQTT_BROKER = '192.168.1.100'
+MQTT_BROKER = '192.168.1.140'
 DEVICE_ID   = "pico-003"
 CLIENT_ID   = 'pico-003'
 # --- การจัดการ Topic ทั้งหมด ---
