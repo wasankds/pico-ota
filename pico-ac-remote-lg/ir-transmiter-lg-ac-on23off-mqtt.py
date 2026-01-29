@@ -5,8 +5,6 @@ import config
 import wifi_manager
 import gc
 from umqtt.simple import MQTTClient
-SYSNAME : str = "EGEL AC Remote"
-SYSVER : str = "1.0.0"
 
 # --- Hardware Setup ---
 LED = machine.Pin("LED", machine.Pin.OUT)
@@ -28,10 +26,10 @@ RAW_OFF = config.RAW_OFF
 RAW_LIGHT = config.RAW_LIGHT
 
 # --- MQTT Variables ---
-CLIENT = None
-MQTT_CONNECTED = False
-LAST_MQTT_RECONNECT = 0
-LAST_DHT_SEND = 0
+client = None
+mqtt_connected = False
+last_mqtt_reconnect = 0
+last_dht_send = 0
 
 # --- 1. ฟังก์ชันส่งสัญญาณ IR (ยิง 1 รอบ) ---
 def send_ir(raw_data, name):
@@ -45,58 +43,12 @@ def send_ir(raw_data, name):
     LED.off()
     print(f"[IR] {name} Sent.")
 
-
-# ฟังก์ชันนี้เพื่อจัดการ OTA โดยเฉพาะ ---
-def trigger_ota():
-    global MQTT_CONNECTED, CLIENT
-    print("Received Update Command via MQTT")
-    
-    # 2. ปิด MQTT และล้าง RAM (สำคัญมากเพื่อแก้ Error -2)
-    try:
-      if CLIENT:
-        CLIENT.publish(config.TOPIC_AVAIL, "UPDATING", retain=True)
-        utime.sleep_ms(200)
-        CLIENT.disconnect()
-        CLIENT = None
-    except: pass
-    
-    MQTT_CONNECTED = False
-    gc.collect() # ล้างขยะใน Memory
-    utime.sleep(1)
-
-    try:
-        import senko        
-        gc.collect() # บังคับ gc อีกรอบก่อนเริ่ม Senko
-
-        OTA = senko.Senko(
-          user=config.OTA_USER, 
-          repo=config.OTA_REPO, 
-          working_dir=config.OTA_DIR, 
-          files=config.OTA_FILES
-        )
-
-        if OTA.update():
-          utime.sleep(2)
-          machine.reset()
-        else:
-          utime.sleep(2)
-          machine.reset()
-    except Exception as e:
-      utime.sleep(3)
-      machine.reset()
-        
-
 # --- 2. ฟังก์ชัน MQTT Callback ---
 def on_message(topic, msg):
     t = topic.decode()
     m = msg.decode().upper()
     print(f"\n[MQTT] Incoming CMD: {t} -> {m}")
     
-    # ตรวจสอบ Topic จาก Node.js (deviceId/system/update)
-    if t.endswith(config.TOPIC_UPDATE) and m == "UPDATE":
-        trigger_ota()
-        return # ออกจากฟังก์ชันทันที
-      
     if t == config.TOPIC_AC_ON:
         send_ir(RAW_ON, "POWER ON")
     elif t == config.TOPIC_AC_OFF:
@@ -108,27 +60,27 @@ def on_message(topic, msg):
 
 # --- 3. ฟังก์ชันเชื่อมต่อ MQTT ---
 def try_mqtt_connect():
-    global CLIENT, MQTT_CONNECTED
+    global client, mqtt_connected
     try:
         print("Connecting to MQTT Broker...")
-        CLIENT = MQTTClient(config.CLIENT_ID, config.MQTT_BROKER, keepalive=60)
-        CLIENT.set_callback(on_message)
-        CLIENT.set_last_will(config.TOPIC_AVAIL, "OFFLINE", retain=True, qos=1)
-        CLIENT.connect()
+        client = MQTTClient(config.CLIENT_ID, config.MQTT_BROKER, keepalive=60)
+        client.set_callback(on_message)
+        client.set_last_will(config.TOPIC_AVAIL, "OFFLINE", retain=True, qos=1)
+        client.connect()
         
         # Subscribe หัวข้อต่างๆ
-        CLIENT.subscribe(config.TOPIC_AC_ON)
-        CLIENT.subscribe(config.TOPIC_AC_OFF)
-        CLIENT.subscribe(config.TOPIC_AC_LED)
-        CLIENT.subscribe(config.TOPIC_QUERY)
+        client.subscribe(config.TOPIC_AC_ON)
+        client.subscribe(config.TOPIC_AC_OFF)
+        client.subscribe(config.TOPIC_AC_LED)
+        client.subscribe(config.TOPIC_QUERY)
         
-        CLIENT.publish(config.TOPIC_AVAIL, "ONLINE", retain=True, qos=1)
-        MQTT_CONNECTED = True
+        client.publish(config.TOPIC_AVAIL, "ONLINE", retain=True, qos=1)
+        mqtt_connected = True
         print("MQTT Connected")
         return True
     except Exception as e:
         print(f"MQTT Error: {e}")
-        MQTT_CONNECTED = False
+        mqtt_connected = False
         return False
 
 # --- 4. ฟังก์ชันอ่านและส่งค่า DHT (ทำเมื่อถึงเวลาส่งเท่านั้น) ---
@@ -138,7 +90,7 @@ def send_dht_data():
         t = SENSOR.temperature()
         h = SENSOR.humidity()
         msg = '{{"t": "{}", "h": "{}"}}'.format(t, h)
-        CLIENT.publish(config.TOPIC_SENSOR_DHT, msg)
+        client.publish(config.TOPIC_SENSOR_DHT, msg)
         print(f"[MQTT] DHT Data Sent: {t}C, {h}%")
         gc.collect() # เคลียร์แรมหลังส่ง
     except Exception as e:
@@ -157,26 +109,26 @@ for _ in range(3): LED.on(); utime.sleep(0.1); LED.off(); utime.sleep(0.1)
 print("\nSystem Starting...")
 
 if wifi_manager.connect_wifi(config.WIFI_CONFIGS):
-  try_mqtt_connect()
+    try_mqtt_connect()
 
 # --- Main Loop ---
 while True:
     now = utime.ticks_ms()
     
     # 1. จัดการ MQTT
-    if MQTT_CONNECTED:
+    if mqtt_connected:
         try:
-            CLIENT.check_msg()
+            client.check_msg()
         except:
-            MQTT_CONNECTED = False
-    elif utime.ticks_diff(now, LAST_MQTT_RECONNECT) > 15000:
+            mqtt_connected = False
+    elif utime.ticks_diff(now, last_mqtt_reconnect) > 15000:
         try_mqtt_connect()
-        LAST_MQTT_RECONNECT = now
+        last_mqtt_reconnect = now
 
     # 2. ส่งข้อมูล DHT ไป MQTT ทุก 10 วินาที (อ่านเฉพาะตอนนี้)
-    if MQTT_CONNECTED and utime.ticks_diff(now, LAST_DHT_SEND) > 10000:
-      send_dht_data()
-      LAST_DHT_SEND = now
+    if mqtt_connected and utime.ticks_diff(now, last_dht_send) > 10000:
+        send_dht_data()
+        last_dht_send = now
 
     # 3. ตรวจสอบปุ่มกดหน้าเครื่อง
     if is_pressed(BTN_ON):
