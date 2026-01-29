@@ -20,9 +20,9 @@ TOPIC_AC_ON = DEVICE_ID + "/ac/on"
 TOPIC_AC_OFF = DEVICE_ID + "/ac/off"
 TOPIC_AC_LED = DEVICE_ID + "/ac/led"
 TOPIC_SENSOR_DHT = DEVICE_ID + "/sensor/dht"
-# 
 TOPIC_QUERY     = DEVICE_ID + "/system/query"
 TOPIC_AVAIL     = DEVICE_ID + "/system/availability"
+TOPIC_UPDATE    = DEVICE_ID + "/system/update"
 
 # --- ข้อมูลดิบ (Raw Data) เปิดแอร์ ---
 RAW_ON = [563, 1528, 549, 491, 550, 485, 550, 494, 549, 1528, 549, 485, 550, 497, 550, 491, 537, 498, 549, 485, 548, 486, 549, 497, 550, 485, 549, 485, 550, 486, 549, 499, 550, 1527, 549, 498, 548, 499, 550, 486, 549, 485, 549, 498, 536, 499, 550, 485, 549, 1541, 536, 500, 549, 499, 548, 511, 549]
